@@ -31,3 +31,10 @@ NOISE_COLUMNS = [
     "sticker_serial_mod",
     "shelf_slot_no"
 ]
+
+def clean_shipments(df):
+    df = df.copy()
+
+    df = df.drop_duplicates().reset_index(drop=True)
+
+    return df
