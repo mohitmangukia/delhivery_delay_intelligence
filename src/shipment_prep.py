@@ -52,4 +52,11 @@ def clean_shipments(df):
         .str.title()
     )
 
+    df["declared_value"] = pd.to_numeric(
+        df["declared_value"]
+        .astype("string")
+        .str.replace(r"[₹,]", "", regex=True),
+        errors="coerce",
+    )
+
     return df
