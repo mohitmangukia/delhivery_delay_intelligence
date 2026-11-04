@@ -44,4 +44,12 @@ def clean_shipments(df):
         .str.title()
     )
 
+    df["payment_mode"] = (
+        df["payment_mode"]
+        .fillna("Unknown")
+        .astype("string")
+        .str.strip()
+        .str.title()
+    )
+
     return df
