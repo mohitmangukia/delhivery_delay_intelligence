@@ -64,4 +64,6 @@ def clean_shipments(df):
         errors="coerce",
     )
 
+    df.loc[df["parcel_weight_kg"] > 100, "parcel_weight_kg"] = np.nan
+
     return df
