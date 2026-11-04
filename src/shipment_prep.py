@@ -37,4 +37,11 @@ def clean_shipments(df):
 
     df = df.drop_duplicates().reset_index(drop=True)
 
+    df["service_type"] = (
+        df["service_type"]
+        .astype("string")
+        .str.strip()
+        .str.title()
+    )
+
     return df
