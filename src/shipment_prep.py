@@ -59,4 +59,9 @@ def clean_shipments(df):
         errors="coerce",
     )
 
+    df["dispatch_time"] = pd.to_datetime(
+        df["dispatch_time"],
+        errors="coerce",
+    )
+
     return df
