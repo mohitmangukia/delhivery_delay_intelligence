@@ -32,7 +32,7 @@ NOISE_COLUMNS = [
     "shelf_slot_no"
 ]
 
-def clean_shipments(df):
+def clean_shipments(df, medians=None):
     df = df.copy()
 
     df = df.drop_duplicates().reset_index(drop=True)
@@ -66,4 +66,32 @@ def clean_shipments(df):
 
     df.loc[df["parcel_weight_kg"] > 100, "parcel_weight_kg"] = np.nan
 
-    return df
+    median_columns = [
+        "distance_km",
+        "parcel_weight_kg",
+        "declared_value_inr"
+    ]
+
+    if medians is None:
+        medians = {
+            column: float(df[column].median())
+            for column in median_columns
+        }
+    else:
+        expected_keys = set(median_columns)
+
+        if set(medians.keys()) != expected_keys:
+            raise ValueError(
+                f"medians must contain exactly these keys: {median_columns}"
+            )
+
+        medians = {
+            column: float(medians[column])
+            for column in median_columns
+        }
+    
+    for column in median_columns:
+        clean_df[column] = clean_df[column].fillna(medians[column])
+
+
+    return df, medians
