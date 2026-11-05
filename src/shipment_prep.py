@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 PROMISED_HOURS = {
     "Express": 36,
     "Standard": 60,
@@ -52,12 +55,14 @@ def clean_shipments(df, medians=None):
         .str.title()
     )
 
-    df["declared_value"] = pd.to_numeric(
-        df["declared_value"]
-        .astype("string")
-        .str.replace(r"[₹,]", "", regex=True),
-        errors="coerce",
-    )
+    if "declared_value" in df.columns:
+        df["declared_value_inr"] = pd.to_numeric(
+            df["declared_value"]
+            .astype("string")
+            .str.replace(r"[₹,]", "", regex=True),
+            errors="coerce",
+        ).astype(float)
+        df = df.drop(columns=["declared_value"])
 
     df["dispatch_time"] = pd.to_datetime(
         df["dispatch_time"],
@@ -95,3 +100,45 @@ def clean_shipments(df, medians=None):
 
 
     return df, medians
+
+def build_features(clean, hubs):
+    df = clean.copy()
+
+    hub_columns = [
+        "hub_id",
+        "hub_city",
+        "region",
+        "hub_tier",
+        "hub_daily_capacity"
+    ]
+
+    df = df.merge(
+        hubs[hub_columns],
+        on="hub_id",
+        how="left",
+        validate="many_to_one"
+    )
+
+    df["promised_hours"] = (
+        df["service_type"]
+        .map(PROMISED_HOURS)
+        .astype(int)
+    )
+
+    df["is_cod"] = (
+        df["payment_mode"].astype(str).str.upper() == "COD"
+    ).astype(int)
+
+    df["is_weekend"] = (
+        df["dispatch_time"].dt.dayofweek >= 5
+    ).astype(int)
+
+    df["dispatch_hour"] = (
+        df["dispatch_time"].dt.hour.astype(int)
+    )
+
+    df["log_declared_value"] = np.log(
+        df["declared_value_inr"]
+    )
+
+    return df
