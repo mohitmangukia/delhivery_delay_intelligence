@@ -96,7 +96,7 @@ def clean_shipments(df, medians=None):
         }
     
     for column in median_columns:
-        clean_df[column] = clean_df[column].fillna(medians[column])
+        df[column] = df[column].fillna(medians[column])
 
 
     return df, medians
