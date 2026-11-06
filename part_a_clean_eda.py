@@ -384,7 +384,23 @@ checks_df.to_csv(
 
 
 # --------------------------------------------------
-# 14. Display summary
+# 14. Generate correlation matrix
+# --------------------------------------------------
+print("\nGenerating correlation matrix...")
+
+correlations = modelling_df.corr(numeric_only=True)
+
+# Keep the row labels as the first CSV column
+correlations.index.name = "column"
+
+CORRELATIONS_PATH = OUTPUT_DIR / "part_a_correlations.csv"
+correlations.to_csv(CORRELATIONS_PATH, index=True)
+
+print(f"Correlation matrix saved to: {CORRELATIONS_PATH}")
+
+
+# --------------------------------------------------
+# 15. Display summary
 # --------------------------------------------------
 
 print("\n" + "=" * 55)
