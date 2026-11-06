@@ -290,6 +290,16 @@ modelling_df["distance_band"] = pd.cut(
     include_lowest=True
 )
 
+delay_df = modelling_df.copy()
+
+delay_df["distance_band"] = pd.cut(
+    delay_df["distance_km"],
+    bins=distance_bins,
+    labels=distance_labels,
+    right=True,
+    include_lowest=True
+)
+
 
 # Helper function to summarize each group
 def summarize_delay_groups(df, dimension):
@@ -328,18 +338,15 @@ def summarize_delay_groups(df, dimension):
 
 # Generate summaries for the three required dimensions.
 service_summary = summarize_delay_groups(
-    modelling_df,
-    "service_type"
+    delay_df, "service_type"
 )
 
 hub_tier_summary = summarize_delay_groups(
-    modelling_df,
-    "hub_tier"
+    delay_df, "hub_tier"
 )
 
 distance_summary = summarize_delay_groups(
-    modelling_df,
-    "distance_band"
+    delay_df, "distance_band"
 )
 
 # Combine all three summaries.
