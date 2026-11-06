@@ -101,15 +101,10 @@ A shallow tree (depth 1) had high training and validation errors, indicating und
 
 
 | Model | Validation RMSE | Validation R² |
-
 |---|---:|---:|
-
 | Linear Regression | 4.8912 | 0.9313 |
-
 | Gradient Boosting | 4.9165 | 0.9306 |
-
 | Random Forest | 5.5095 | 0.9128 |
-
 | Decision Tree (depth 6) | 6.2796 | 0.8867 |
 
 
@@ -127,13 +122,9 @@ The experiment compared learning rates of 0.01, 0.1, and 1.0 with 100 estimators
 
 
 | Learning rate | Validation RMSE | Validation R² |
-
 |---:|---:|---:|
-
 | 0.01 | 10.0018 | 0.7127 |
-
 | 0.10 | 4.9165 | 0.9306 |
-
 | 1.00 | 7.3701 | 0.8440 |
 
 
@@ -151,11 +142,8 @@ Five-fold cross-validation was performed on the combined training and validation
 
 
 | Model | Mean R² | Standard deviation |
-
 |---|---:|---:|
-
 | Linear Regression | 0.9261 | 0.0048 |
-
 | Gradient Boosting | 0.9353 | 0.0045 |
 
 
@@ -177,15 +165,10 @@ The selected Linear Regression model was evaluated on the untouched test set.
 
 
 | Metric | Test result |
-
 |---|---:|
-
 | MAE | 3.5671 hours |
-
 | MSE | 20.4624 |
-
 | RMSE | 4.5235 hours |
-
 | R² | 0.9493 |
 
 
@@ -235,13 +218,9 @@ The three trained classifiers performed better than the blind baseline:
 
 
 | Model | Validation accuracy | Precision | Recall | F1-score |
-
 |---|---:|---:|---:|---:|
-
 | Logistic Regression | 0.9056 | 0.7778 | 0.8333 | 0.8046 |
-
 | Decision Tree (depth 6) | 0.8833 | 0.7561 | 0.7381 | 0.7470 |
-
 | Random Forest | 0.9056 | 0.8378 | 0.7381 | 0.7848 |
 
 
@@ -291,17 +270,11 @@ The validation F1-scores for different feature counts were:
 
 
 | Number of features (k) | Validation F1 |
-
 |---:|---:|
-
 | 5 | 0.6988 |
-
 | 7 | 0.8333 |
-
 | 10 | 0.7857 |
-
 | 12 | 0.8049 |
-
 | 17 | 0.7848 |
 
 
@@ -319,13 +292,9 @@ Grid Search evaluated 27 parameter combinations using five-fold cross-validation
 
 
 | Search configuration | Best CV accuracy | Validation F1 |
-
 |---|---:|---:|
-
 | Grid Search | 0.8952 | 0.7750 |
-
 | Randomized Search | 0.8905 | 0.7848 |
-
 | Default Random Forest on 7 features | — | 0.8333 |
 
 
@@ -375,15 +344,10 @@ The final model was evaluated once on the held-out test set using the selected t
 
 
 | Metric | Test result |
-
 |---|---:|
-
 | Accuracy | 0.8667 |
-
 | Precision | 0.6889 |
-
 | Recall | 0.7561 |
-
 | F1-score | 0.7209 |
 
 
@@ -393,11 +357,8 @@ Confusion matrix:
 
 
 | | Predicted on-time | Predicted delayed |
-
 |---|---:|---:|
-
 | Actual on-time | 125 | 14 |
-
 | Actual delayed | 10 | 31 |
 
 
@@ -423,23 +384,14 @@ Test recall was 75.61%, compared with validation recall of 83.33%, a decrease of
 
 
 | Parameter | Selected value |
-
 |---|---|
-
 | Feature selector | SelectKBest (ANOVA F-score) |
-
 | Number of selected features | 7 |
-
 | Classifier | RandomForestClassifier |
-
 | Number of estimators | 100 |
-
 | Maximum depth | Unlimited |
-
 | Minimum samples per leaf | 1 |
-
 | Decision threshold | 0.5 |
-
 | Configuration selected from | `default_forest_same_7_features` |
 
 
