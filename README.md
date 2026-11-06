@@ -97,3 +97,128 @@ The selected Linear Regression model was evaluated on the untouched test set.
 The final model achieved a test R² of 0.9493, exceeding the required benchmark of 0.88. Its predictions explain approximately 94.93% of the variation in delivery hours in the held-out test data.
 
 **Final selected regression model: Linear Regression.**
+
+## Part C — Delay Classification
+
+### 1. Baseline performance
+
+The blind baseline predicts every shipment as on-time. It achieves an accuracy of **76.67%**, because most shipments in the dataset are not delayed.
+
+However, it identifies none of the delayed shipments:
+
+- Precision: 0.00
+- Recall: 0.00
+- F1-score: 0.00
+
+This demonstrates why accuracy alone is insufficient for an imbalanced classification problem. A model that never identifies a delayed shipment is not operationally useful.
+
+### 2. Classifier comparison
+
+The three trained classifiers performed better than the blind baseline:
+
+| Model | Validation accuracy | Precision | Recall | F1-score |
+|---|---:|---:|---:|---:|
+| Logistic Regression | 0.9056 | 0.7778 | 0.8333 | 0.8046 |
+| Decision Tree (depth 6) | 0.8833 | 0.7561 | 0.7381 | 0.7470 |
+| Random Forest | 0.9056 | 0.8378 | 0.7381 | 0.7848 |
+
+The Decision Tree depth experiment selected depth 6 based on the highest validation F1-score. The trained models all exceeded the baseline accuracy and met their respective F1 acceptance thresholds.
+
+### 3. Feature signal and noise
+
+The top seven features ranked by ANOVA F-score were:
+
+1. `distance_km`
+2. `hub_tier`
+3. `hub_daily_capacity`
+4. `n_stops`
+5. `promised_hours`
+6. `rain_flag`
+7. `sale_event_flag`
+
+All five designated noise columns ranked outside the top seven and had F-scores below 10.
+
+The combined Random Forest feature importance of these five noise columns was **22.44%**, within the expected 15–30% range. This shows that Random Forest importance can distribute some importance to weak or noisy variables, even when their individual univariate F-scores are low.
+
+### 4. Feature selection experiment
+
+The validation F1-scores for different feature counts were:
+
+| Number of features (k) | Validation F1 |
+|---:|---:|
+| 5 | 0.6988 |
+| 7 | 0.8333 |
+| 10 | 0.7857 |
+| 12 | 0.8049 |
+| 17 | 0.7848 |
+
+Using seven features produced the strongest recorded result. Adding more features did not improve validation F1 in this experiment. Therefore, `k=7` was selected for the final classification pipeline.
+
+### 5. Hyperparameter tuning
+
+Grid Search evaluated 27 parameter combinations using five-fold cross-validation, resulting in 135 fits. Randomized Search evaluated nine combinations, resulting in 45 fits.
+
+| Search configuration | Best CV accuracy | Validation F1 |
+|---|---:|---:|
+| Grid Search | 0.8952 | 0.7750 |
+| Randomized Search | 0.8905 | 0.7848 |
+| Default Random Forest on 7 features | — | 0.8333 |
+
+Neither tuned configuration improved validation F1 over the default Random Forest using seven selected features.
+
+The validation set contains only 180 shipments. Therefore, small differences in validation performance should not be treated as conclusive evidence that one configuration will generalize better. The simpler default configuration was retained.
+
+### 6. Operational decision threshold
+
+The operational rule was to select the highest tested probability threshold that maintained validation recall of at least 0.80.
+
+The selected threshold was **0.5**, with:
+
+- Validation precision: 79.55%
+- Validation recall: 83.33%
+- Validation F1-score: 81.40%
+
+Increasing the threshold to 0.6 improved precision to 88.89%, but reduced recall to 76.19%, below the operational requirement. Therefore, 0.5 was retained.
+
+This threshold balances identifying delayed shipments against generating false delay alerts.
+
+### 7. Final test performance
+
+The final model was evaluated once on the held-out test set using the selected threshold of 0.5.
+
+| Metric | Test result |
+|---|---:|
+| Accuracy | 0.8667 |
+| Precision | 0.6889 |
+| Recall | 0.7561 |
+| F1-score | 0.7209 |
+
+Confusion matrix:
+
+| | Predicted on-time | Predicted delayed |
+|---|---:|---:|
+| Actual on-time | 125 | 14 |
+| Actual delayed | 10 | 31 |
+
+All three required test acceptance thresholds were achieved:
+
+- Precision ≥ 0.45: **Passed**
+- Recall ≥ 0.55: **Passed**
+- F1-score ≥ 0.60: **Passed**
+
+Test recall was 75.61%, compared with validation recall of 83.33%, a decrease of 7.72 percentage points. The test set contains only 41 delayed shipments, so each additional missed delayed shipment has a noticeable effect on recall. This difference should be reported transparently rather than interpreted as definitive evidence of overfitting.
+
+### 8. Final model configuration
+
+| Parameter | Selected value |
+|---|---|
+| Feature selector | SelectKBest (ANOVA F-score) |
+| Number of selected features | 7 |
+| Classifier | RandomForestClassifier |
+| Number of estimators | 100 |
+| Maximum depth | Unlimited |
+| Minimum samples per leaf | 1 |
+| Decision threshold | 0.5 |
+| Configuration selected from | `default_forest_same_7_features` |
+
+The final pipeline was fitted on the training set. The validation set was used for model and threshold selection, and the held-out test set was reserved for the final evaluation.
