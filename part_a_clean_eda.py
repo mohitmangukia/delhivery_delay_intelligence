@@ -381,6 +381,37 @@ print(delay_by_group.to_string(index=False))
 
 print(f"\nSaved: {DELAY_GROUP_PATH}")
 
+# Validate incoming shipments using stored historical medians
+print("\nValidating incoming shipments...")
+
+with open(MEDIANS_PATH, "r", encoding="utf-8") as file:
+    stored_medians = json.load(file)
+
+new_shipments = pd.read_csv(
+    DATA_DIR / "new_shipments.csv"
+)
+
+new_clean, reused_medians = clean_shipments(
+    new_shipments,
+    medians=stored_medians
+)
+
+new_features = build_features(new_clean, hubs)
+
+missing_new_features = (
+    new_features[FEATURES].isna().sum().sum()
+)
+
+if missing_new_features != 0:
+    raise ValueError(
+        f"Incoming shipments contain {missing_new_features} "
+        "missing feature values."
+    )
+
+print(f"Incoming shipments: {len(new_features)}")
+print(f"Missing feature values: {missing_new_features}")
+print("Stored historical medians reused successfully.")
+
 
 # --------------------------------------------------
 # 13. Save output files
