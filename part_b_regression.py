@@ -4,13 +4,17 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 
 from src.shipment_prep import FEATURES
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.tree import DecisionTreeRegressor
+
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 
 
 # --------------------------------------------------
@@ -216,3 +220,239 @@ else:
 
 print(f"\nBest decision tree depth: {best_tree_depth}")
 print(f"Best validation RMSE: {best_tree_row['val_rmse']:.4f}")
+
+
+
+# --------------------------------------------------
+# 8. FOUR CANDIDATE MODELS
+# --------------------------------------------------
+
+print("\nTraining candidate regression models...")
+
+models = {
+    "linear_regression": Pipeline([
+        ("scaler", StandardScaler()),
+        ("model", LinearRegression())
+    ]),
+
+    "decision_tree": DecisionTreeRegressor(
+        max_depth=best_tree_depth,
+        random_state=42
+    ),
+
+    "random_forest": RandomForestRegressor(
+        n_estimators=100,
+        random_state=42
+    ),
+
+    "gradient_boosting": GradientBoostingRegressor(
+        n_estimators=100,
+        learning_rate=0.1,
+        random_state=42
+    )
+}
+
+
+# --------------------------------------------------
+# 9. VALIDATION METRICS
+# --------------------------------------------------
+
+def calculate_metrics(y_true, predictions):
+    mse = mean_squared_error(y_true, predictions)
+
+    return {
+        "MAE": mean_absolute_error(y_true, predictions),
+        "MSE": mse,
+        "RMSE": np.sqrt(mse),
+        "R2": r2_score(y_true, predictions)
+    }
+
+
+metrics_results = []
+
+# Add the mean baseline result
+metrics_results.append({
+    "model": "mean_baseline",
+    "split": "val",
+    **calculate_metrics(y_val, baseline_prediction)
+})
+
+# Fit and evaluate each candidate
+for model_name, model in models.items():
+
+    print(f"Training {model_name}...")
+
+    model.fit(X_train, y_train)
+
+    val_prediction = model.predict(X_val)
+
+    metrics = calculate_metrics(y_val, val_prediction)
+
+    metrics_results.append({
+        "model": model_name,
+        "split": "val",
+        **metrics
+    })
+
+
+metrics_df = pd.DataFrame(
+    metrics_results,
+    columns=["model", "split", "MAE", "MSE", "RMSE", "R2"]
+)
+
+metrics_df.to_csv(
+    OUTPUT_DIR / "part_b_metrics.csv",
+    index=False
+)
+
+print("\nValidation model comparison:")
+print(metrics_df.to_string(index=False))
+
+
+# --------------------------------------------------
+# 10. GRADIENT BOOSTING LEARNING-RATE EXPERIMENT
+# --------------------------------------------------
+
+print("\nEvaluating Gradient Boosting learning rates...")
+
+learning_rates = [0.01, 0.1, 1.0]
+
+learning_rate_results = []
+
+for rate in learning_rates:
+
+    model = GradientBoostingRegressor(
+        n_estimators=100,
+        learning_rate=rate,
+        random_state=42
+    )
+
+    model.fit(X_train, y_train)
+
+    val_prediction = model.predict(X_val)
+
+    learning_rate_results.append({
+        "learning_rate": rate,
+        "val_rmse": np.sqrt(
+            mean_squared_error(y_val, val_prediction)
+        ),
+        "val_r2": r2_score(y_val, val_prediction)
+    })
+
+
+learning_rate_df = pd.DataFrame(learning_rate_results)
+
+learning_rate_df.to_csv(
+    OUTPUT_DIR / "part_b_gb_learning_rate.csv",
+    index=False
+)
+
+print("\nGradient Boosting learning-rate comparison:")
+print(learning_rate_df.to_string(index=False))
+
+# --------------------------------------------------
+# 11. CROSS-VALIDATION OF TOP TWO MODELS
+# --------------------------------------------------
+
+print("\nRunning 5-fold cross-validation...")
+
+# Rank candidate models using validation RMSE.
+# Exclude the mean baseline.
+candidate_ranking = (
+    metrics_df[metrics_df["model"] != "mean_baseline"]
+    .sort_values("RMSE")
+)
+
+top_two_models = candidate_ranking["model"].head(2).tolist()
+
+print(f"Top two models: {top_two_models}")
+
+# Combine training and validation data.
+# Keep the test set completely separate.
+X_train_val = pd.concat([X_train, X_val])
+y_train_val = pd.concat([y_train, y_val])
+
+# Use the same KFold configuration for both models.
+kfold = KFold(
+    n_splits=5,
+    shuffle=True,
+    random_state=42
+)
+
+cv_results = []
+
+for model_name in top_two_models:
+
+    model = models[model_name]
+
+    print(f"Cross-validating {model_name}...")
+
+    fold_scores = cross_val_score(
+        model,
+        X_train_val,
+        y_train_val,
+        cv=kfold
+    )
+
+    cv_results.append({
+        "model": model_name,
+        "mean_r2": fold_scores.mean(),
+        "std_r2": fold_scores.std()
+    })
+
+cv_df = pd.DataFrame(cv_results)
+
+cv_df.to_csv(
+    OUTPUT_DIR / "part_b_cv.csv",
+    index=False
+)
+
+print("\nCross-validation results:")
+print(cv_df.to_string(index=False))
+
+
+# --------------------------------------------------
+# 12. FINAL MODEL SELECTION AND TEST EVALUATION
+# --------------------------------------------------
+
+print("\nSelecting final model...")
+
+# Select the candidate with the lowest validation RMSE.
+final_model_name = (
+    metrics_df[metrics_df["model"] != "mean_baseline"]
+    .sort_values("RMSE")
+    .iloc[0]["model"]
+)
+
+final_model = models[final_model_name]
+
+print(f"Final selected model: {final_model_name}")
+
+# Evaluate the already-trained model on the untouched test set.
+test_prediction = final_model.predict(X_test)
+
+test_metrics = calculate_metrics(y_test, test_prediction)
+
+# Add the final test result to the metrics file.
+test_result = {
+    "model": final_model_name,
+    "split": "test",
+    **test_metrics
+}
+
+metrics_df = pd.concat(
+    [metrics_df, pd.DataFrame([test_result])],
+    ignore_index=True
+)
+
+metrics_df.to_csv(
+    OUTPUT_DIR / "part_b_metrics.csv",
+    index=False
+)
+
+print("\nFinal test-set performance:")
+
+for metric, value in test_metrics.items():
+    print(f"{metric}: {value:.4f}")
+
+print("\nUpdated Part B metrics saved.")
