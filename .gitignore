@@ -1,19 +1,21 @@
-# Python environment
-.venv/
-venv/
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
 
 # IDE
 .idea/
 .vscode/
 
-# Jupyter
-.ipynb_checkpoints/
-
-# Operating system
+# OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Temporary files
 *.log
