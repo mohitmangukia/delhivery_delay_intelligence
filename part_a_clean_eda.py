@@ -256,7 +256,118 @@ checks_df["value"] = checks_df["value"].apply(
 
 
 # --------------------------------------------------
-# 12. Save output files
+# 12. Create delay evidence table
+# --------------------------------------------------
+
+print("\nGenerating delay evidence table...")
+
+# Create distance bands.
+# right=True means the right edge is inclusive:
+# (0, 200], (200, 400], (400, 600], (600, 2000]
+distance_bins = [0, 200, 400, 600, 2000]
+
+distance_labels = [
+    "0-200",
+    "201-400",
+    "401-600",
+    "601+"
+]
+
+modelling_df["distance_band"] = pd.cut(
+    modelling_df["distance_km"],
+    bins=distance_bins,
+    labels=distance_labels,
+    right=True,
+    include_lowest=True
+)
+
+
+# Helper function to summarize each group
+def summarize_delay_groups(df, dimension):
+    grouped = (
+        df.groupby(dimension, observed=False)
+        .agg(
+            shipments=("shipment_id", "count"),
+            delayed=("is_delayed", "sum"),
+            delay_rate=("is_delayed", "mean"),
+            mean_hours=("delivery_hours", "mean")
+        )
+        .reset_index()
+    )
+
+    grouped = grouped.rename(
+        columns={dimension: "group"}
+    )
+
+    grouped.insert(
+        0,
+        "dimension",
+        dimension
+    )
+
+    return grouped[
+        [
+            "dimension",
+            "group",
+            "shipments",
+            "delayed",
+            "delay_rate",
+            "mean_hours"
+        ]
+    ]
+
+
+# Generate summaries for the three required dimensions.
+service_summary = summarize_delay_groups(
+    modelling_df,
+    "service_type"
+)
+
+hub_tier_summary = summarize_delay_groups(
+    modelling_df,
+    "hub_tier"
+)
+
+distance_summary = summarize_delay_groups(
+    modelling_df,
+    "distance_band"
+)
+
+# Combine all three summaries.
+delay_by_group = pd.concat(
+    [
+        service_summary,
+        hub_tier_summary,
+        distance_summary
+    ],
+    ignore_index=True
+)
+
+# Round decimal metrics to four places.
+delay_by_group["delay_rate"] = (
+    delay_by_group["delay_rate"].round(4)
+)
+
+delay_by_group["mean_hours"] = (
+    delay_by_group["mean_hours"].round(4)
+)
+
+# Save output.
+DELAY_GROUP_PATH = OUTPUT_DIR / "part_a_delay_by_group.csv"
+
+delay_by_group.to_csv(
+    DELAY_GROUP_PATH,
+    index=False
+)
+
+print("\nDelay evidence table:")
+print(delay_by_group.to_string(index=False))
+
+print(f"\nSaved: {DELAY_GROUP_PATH}")
+
+
+# --------------------------------------------------
+# 13. Save output files
 # --------------------------------------------------
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -273,7 +384,7 @@ checks_df.to_csv(
 
 
 # --------------------------------------------------
-# 13. Display summary
+# 14. Display summary
 # --------------------------------------------------
 
 print("\n" + "=" * 55)
