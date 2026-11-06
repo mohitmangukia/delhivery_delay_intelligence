@@ -1,4 +1,4 @@
-
+import json
 from pathlib import Path
 
 import numpy as np
@@ -19,11 +19,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 DATA_DIR = PROJECT_ROOT / "data"
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
+MODEL_DIR = PROJECT_ROOT / "models"
 
 RAW_SHIPMENTS_PATH = DATA_DIR / "raw_shipments.csv"
 HUBS_PATH = DATA_DIR / "hubs.csv"
 MODELLING_TABLE_PATH = DATA_DIR / "modelling_table.csv"
 CHECKS_PATH = OUTPUT_DIR / "part_a_checks.csv"
+MEDIANS_PATH = MODEL_DIR / "imputation_medians.json"
 
 
 # --------------------------------------------------
@@ -90,6 +92,13 @@ service_type_spellings_before = (
 print("\nCleaning historical shipments...")
 
 clean_df, medians = clean_shipments(raw_shipments)
+
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+with open(MEDIANS_PATH, "w", encoding="utf-8") as file:
+    json.dump(medians, file, indent=4)
+
+print(f"Historical medians saved to: {MEDIANS_PATH}")
 
 service_type_spellings_after = (
     clean_df["service_type"].nunique()
