@@ -35,8 +35,8 @@ NOISE_COLUMNS = [
     "shelf_slot_no"
 ]
 
-def clean_shipments(df, medians=None):
-    df = df.copy()
+def clean_shipments(raw, medians=None):
+    df = raw.copy()
 
     df = df.drop_duplicates().reset_index(drop=True)
 
