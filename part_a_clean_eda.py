@@ -282,8 +282,10 @@ distance_labels = [
     "601+"
 ]
 
-modelling_df["distance_band"] = pd.cut(
-    modelling_df["distance_km"],
+delay_df = modelling_df.copy()
+
+delay_df["distance_band"] = pd.cut(
+    delay_df["distance_km"],
     bins=distance_bins,
     labels=distance_labels,
     right=True,
